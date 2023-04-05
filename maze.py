@@ -1,8 +1,10 @@
 import sys
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Tuple, List
 from scipy.ndimage import convolve
+from operator import itemgetter
 
 class Maze:
     def __init__(self, initial_position, goal, current_state) ->  None:
@@ -103,6 +105,29 @@ class Maze:
         else:
             return(True)
 
+    def _manhattan(self, a, b):
+        return sum(abs(val1-val2) for val1, val2 in zip(a,b))
+
+    def _check_distance(self) -> tuple:
+        """Check if the was reached in the current turn
+        """
+        pair_min = (0,0)
+        d_min = 1000000
+        for _, vv in self.response.items():
+            temp =  [i[0] for i in vv]
+            if len(temp) > 10:
+                a = max(temp,key=itemgetter(0))
+                b = max(temp,key=itemgetter(1))
+                d_tmep = self._manhattan(a, self.goal)
+                if d_tmep < d_min:
+                    d_min = d_tmep
+                    pair_min = a
+                d_tmep = self._manhattan(b, self.goal)
+                if d_tmep < d_min:
+                    d_min = d_tmep
+                    pair_min = b
+        return(pair_min)
+
     def _create_maze(self)->None:
         """Populates the self.response dict whose key is the current turn and the values are a list of tuples. Each tuple shows the possible current positions, in its first position, and the possible next moves. 
         """      
@@ -110,6 +135,8 @@ class Maze:
         origin = [self.initial_position]
         self._update()
         i = 0
+        start = time.time()
+        global_start = time.time()        
         while True:
             turns[i] = []
             for p in origin:
@@ -122,6 +149,9 @@ class Maze:
             self.response = turns
             self._update()
             i += 1
+            if time.time() - start > 10:
+                print(f"Greatest distance reached {self._check_distance()} in {time.time() - global_start}")
+                start = time.time()
             if self._is_goal():
                 break
 
@@ -190,10 +220,11 @@ class Maze:
 if __name__ == '__main__':
     arg = sys.argv    
     if len(arg) == 2:
-      M = np.loadtxt("input.txt")
+      M = np.loadtxt(arg[1])
       M[0][0] = 0
       M[M.shape[0] - 1][M.shape[1] - 1] = 0
       goal = M.shape[0] - 1, M.shape[1] - 1
+      print(goal)
       maze = Maze((0,0),goal,M)
       maze.solve()
     else:
