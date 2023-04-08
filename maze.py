@@ -23,43 +23,30 @@ class Maze:
         self.goal = goal
         self.current_state = current_state
         self.update_num = 0
-        self.rows = len(self.current_state)
-        self.columns = len(self.current_state[0])
+        self.rows = self.current_state.shape[0]
+        self.columns = self.current_state.shape[1]
         self.response = None
         self.path = None
 
-    def _update_rule(self, temp:np.array, M_sum:np.array, i:int, j:int) ->  None:
-        """_summary_
 
-        Parameters
-        ----------
-        temp : np.array
-            Temporary new maze state
-        M_sum : np.array
-            Neighbors sum matrix for the current maze state
-        i : int
-            x coordinate to be updated
-        j : int
-            y coordinate to be updated
-        """        
-        if (M_sum[i][j] > 1 and M_sum[i][j] < 5) and self.current_state[i][j] == 0:
-            temp[i][j] = 1
-        if (M_sum[i][j] > 3 and M_sum[i][j] < 6) and self.current_state[i][j] == 1:
-            temp[i][j] = 1
-
+    def _update_rule(self, a, b):
+        if (a > 1 and a < 5) and b == 0:
+            return (1)
+        if (a > 3 and a < 6) and b == 1:
+            return (1)
+        return(0)
+    
     def _update(self) -> None:
         """Update the current state of the maze acording to the _update_rule
         """        
-        temp = np.zeros((self.rows,self.columns))
         kernel = [[1, 1, 1],[1, 0, 1],[1, 1, 1]]
         M_sum = convolve(self.current_state, kernel, mode='constant')
-        for i in range(self.rows):
-            for j in range(self.columns):
-                self._update_rule(temp,M_sum,i,j)
-        self.current_state = temp
-        self.current_state[self.rows - 1][self.columns - 1] = 0
-        self.current_state[0][0] = 0
+        vfunc = np.vectorize(self._update_rule)
+        self.current_state = vfunc(M_sum, self.current_state)
+        self.current_state[self.rows - 1, self.columns - 1] = 0
+        self.current_state[0, 0] = 0
         self.update_num += 1
+        
 
     def _next_path(self,point:tuple) -> List[Tuple]:
         """Given a tuple with the current position create a list of tuples with the next possible moves
@@ -138,6 +125,7 @@ class Maze:
         start = time.time()
         global_start = time.time()        
         while True:
+            int_time = time.time()
             turns[i] = []
             for p in origin:
                 turns[i].append((p, self._next_path(p)))
